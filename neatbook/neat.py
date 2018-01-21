@@ -81,6 +81,7 @@ class Neat:
 
     def getYAsString(self, newDataY):
         output = None
+        newDataYAsNumpy = np.array( newDataY )
         if newDataYAsNumpy.dtype.kind in {'U', 'S'}: # a string
             for i in range(0,len(newDataY)):
                 if newDataY[i] not in trainYMappingsNumToStr.values():
@@ -91,25 +92,26 @@ class Neat:
         else:
             for i in range(0,len(newDataY)):
                 if newDataY[i] not in trainYMappingsNumToStr.keys():
-                    newDataY[i] = 'NotFound'
+                    newDataY[i] = -99
             newDataYAsNumpy = np.array( newDataY )
             output = np.vectorize(self.trainYMappingsNumToStr.get)(newDataYAsNumpy)
         return output
 
     def getYAsNumber(self, newDataY):
-
-        newDataYAsNumpy = np.array( newDataY )
         output = None
+        newDataYAsNumpy = np.array( newDataY )
         if newDataYAsNumpy.dtype.kind in {'U', 'S'}: # a string
             for i in range(0,len(newDataY)):
                 if newDataY[i] not in trainYMappingsStrToNum.keys():
                     newDataY[i] = 'NotFound'
+            newDataYAsNumpy = np.array( newDataY )
             output = np.vectorize(self.trainYMappingsStrToNum.get)(newDataYAsNumpy)
 
         else:
             for i in range(0,len(newDataY)):
                 if newDataY[i] not in trainYMappingsStrToNum.values():
-                    newDataY[i] = 'NotFound'
+                    newDataY[i] = -99
+            newDataYAsNumpy = np.array( newDataY )
             output = newDataYAsNumpy
         return output
 
