@@ -3,11 +3,25 @@ setup(
   name = 'neatbook',
   packages = ['neatbook'], # this must be the same as the name above
   version = '0.1',
-  description = 'Run one command and a Jupyter notebook will appear with most of the work done for you in creating a classification machine learning model.  This library automates cleaning data.  Generates code that will clean data, alter features, and pick features, models, and parameters.'
+  description = 'Automates nearly all the work for classification modeling with help from other packages',
+  long_description='This package creates a Python notebook that automates nearly all the work for classification modeling with help from other packages. I wrote the data cleaning code and notebook generation code. The last four steps of building a model are done by the TPOT package.  It can save me hours and makes the work straightforward.',
   author = 'Peter Myers',
   author_email = 'peterjmyers1@gmail.com',
-  url = 'https://github.com/peterldowns/mypackage', # use the URL to the github repo
-  download_url = 'https://github.com/peterldowns/mypackage/archive/0.1.tar.gz', # I'll explain this in a second
-  keywords = ['testing', 'logging', 'example'], # arbitrary keywords
-  classifiers = [],
+  url = 'https://github.com/Peter-32/neatbook', # use the URL to the github repo
+  download_url = 'https://github.com/Peter-32/neatbook/archive/0.1.tar.gz', # I'll explain this in a second
+  keywords = ['automated machine learning', 'cleaning', 'classification', 'code generation'],
+  classifiers = [
+  'Development Status :: 3 - Alpha',
+'Topic :: Scientific/Engineering :: Artificial Intelligence',
+'License :: OSI Approved :: MIT License',
+'Programming Language :: Python :: 3',
+'Programming Language :: Python :: 3.2',
+'Programming Language :: Python :: 3.3',
+'Programming Language :: Python :: 3.4',
+'Programming Language :: Python :: 3.5',
+'Programming Language :: Python :: 3.6',
+  ],
+  install_requires=['nbformat', 'sklearn', 'numpy', 'pandas'],
+  python_requires='>=3',
+  license='MIT'
 )

@@ -4,13 +4,17 @@ One line generates your Python project. Further configuration is optional. Save 
 
 ## Install
 
-1. Place Neat inside your modules folder.  
-2. Add the modules directory to the PYTHONPATH variable OR place this code in your script
-  - import sys
-  - sys.path.append("path/to/your/modules/folder")
-3. Create a new project directory
-4. Run this code while inside this directory
-  - from Neat.NeatNotebook import *
-  - NewProject()
-5. Find and open the Jupyter Notebook created for you
+Run this command:
+
+pip install neatbook
+
+## Using
+
+1. Create a new project directory
+2. Run this code while inside this directory
+  - python
+  - >>>> from Neat.NeatNotebook import *
+  - >>>> NewProject()
+3. Find and open the Jupyter Notebook created for you
   - Install anaconda if you would like to open Jupyter Notebooks
+4. Follow the instructions for installing TPOT here: http://epistasislab.github.io/tpot/installing/

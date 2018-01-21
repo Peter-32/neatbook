@@ -1,5 +1,0 @@
-setup.py
-neat.egg-info/PKG-INFO
-neat.egg-info/SOURCES.txt
-neat.egg-info/dependency_links.txt
-neat.egg-info/top_level.txt
