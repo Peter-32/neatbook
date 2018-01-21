@@ -7,6 +7,9 @@ from math import ceil
 class Neat:
 
     def __init__(self, trainX, trainY, indexColumns=[], skipColumns=[]):
+        if len(trainY) != len(trainX.index):
+            print("Error: trainX and trainY are differing lengths")
+            return
         self.df = trainX
         self.trainY = trainY
         self.indexColumns = self._cleanColumnNamesArray(indexColumns)
@@ -90,6 +93,12 @@ class Neat:
     def _cleanColumnName(self, string):
         return string.strip().lower().replace(' ', '_')
 
+    def _dropRowsFromDFAndTrainY(self, rowsToDrop):
+        self.df = self.df.drop(self.df.index[rowsToDrop])
+        mask = np.ones(len(self.trainY), np.bool)
+        mask[rowsToDrop] = 0
+        self.trainY = self.trainY[mask]
+
     ########## TrainY ##########
 
     def _setTrainYMappings(self):
@@ -103,13 +112,14 @@ class Neat:
 
     def _convertTrainYToNumeric(self):
         if self.trainY.dtype == 'object': # a string
-            self.trainY = np.vectorize(self.trainYMappings.get)(trainY)
+            self.trainY = np.vectorize(self.trainYMappings.get)(self.trainY)
 
     def _dropNATrainYRows(self):
         rowsToDrop = []
-        for i, row in self.df.iterrows():
-            rowsToDrop.append(i) if np.isnan(row[self.trainY]) else None
-        self.df = self.df.drop(self.df.index[rowsToDrop])
+        for i in range(0,len(self.trainY)):
+            rowsToDrop.append(i) if np.isnan(self.trainY[i]) else None
+        self._dropRowsFromDFAndTrainY(rowsToDrop)
+
 
     ########## Column Metadata ##########
 
@@ -119,7 +129,7 @@ class Neat:
     def _setColumnDataTypes(self):
         columns = self.df.columns.values.tolist()
         for column in columns:
-            if column == self.trainY or column in indexColumns or column in skipColumns:
+            if column in indexColumns or column in skipColumns:
                 continue
             elif self.df[column].dtype == 'int64' or self.df[column].dtype == 'float64':
                 self.numberColumns.append(column)
@@ -139,7 +149,7 @@ class Neat:
                 for column in self.indexColumns:
                     if ((self.df[column].dtype == 'int64' or self.df[column].dtype == 'float64') and (np.isnan(row[column]) or np.isinf(row[column]))) or row[column] == None:
                         rowsToDrop.append(i)
-        self.df = self.df.drop(self.df.index[rowsToDrop])
+        self._dropRowsFromDFAndTrainY(rowsToDrop)
 
     ########## Datetimes ##########
 
@@ -240,7 +250,7 @@ class Neat:
     ########## Class Imbalance ##########
 
     def _saveTrainYFrequencies(self):
-        self.trainYFrequencies = pd.value_counts(self.df[self.trainY].values, sort=True, normalize=False)
+        self.trainYFrequencies = pd.value_counts(self.trainY, sort=True, normalize=False)
 
     def _saveTrainYUpsamplesNeeded(self):
         maxValue = None
