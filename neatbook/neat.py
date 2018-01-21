@@ -11,7 +11,7 @@ class Neat:
             raise Exception('Error: trainX and trainY are differing lengths')
             return
         self.df = trainX
-        self.trainY = a = np.array( trainY )
+        self.trainY = np.array( trainY )
         self.indexColumns = self._cleanColumnNamesArray(indexColumns)
         self.skipColumns = self._cleanColumnNamesArray(skipColumns)
         self.newData = None
@@ -79,6 +79,8 @@ class Neat:
         self._newDataAddMissingFinalColumnNames()
         self._newDataDropExtraColumnNames()
 
+    ########## Getting Started ##########
+
     def getMappingOfYNumberToString(self, newDataY):
         newDataYAsNumpy = np.array( newDataY )
         output = None
@@ -98,12 +100,6 @@ class Neat:
 
     def _cleanColumnName(self, string):
         return string.strip().lower().replace(' ', '_')
-
-    def _dropRowsFromDFAndTrainY(self, rowsToDrop):
-        self.df = self.df.drop(self.df.index[rowsToDrop])
-        mask = np.ones(len(self.trainY), np.bool)
-        mask[rowsToDrop] = 0
-        self.trainY = self.trainY[mask]
 
     ########## TrainY ##########
 
@@ -126,6 +122,11 @@ class Neat:
             rowsToDrop.append(i) if np.isnan(self.trainY[i]) else None
         self._dropRowsFromDFAndTrainY(rowsToDrop)
 
+    def _dropRowsFromDFAndTrainY(self, rowsToDrop):
+        self.df = self.df.drop(self.df.index[rowsToDrop])
+        mask = np.ones(len(self.trainY), np.bool)
+        mask[rowsToDrop] = 0
+        self.trainY = self.trainY[mask]
 
     ########## Column Metadata ##########
 
@@ -150,7 +151,11 @@ class Neat:
     def _dropDuplicatesAndMissingRowsIfIndexIsSpecified(self):
         rowsToDrop = []
         if self.indexColumns != []:
+            self.df['__trainY__'] = self.trainY
             self.df = self.df.drop_duplicates(subset=self.indexColumns)
+            self.trainY = self.df['__trainY__'].values
+            self.df = self.df.drop(['__trainY__'], 1)
+
             for i, row in self.df.iterrows():
                 for column in self.indexColumns:
                     if ((self.df[column].dtype == 'int64' or self.df[column].dtype == 'float64') and (np.isnan(row[column]) or np.isinf(row[column]))) or row[column] == None:
@@ -273,7 +278,7 @@ class Neat:
             self.trainYUpsamplesNeeded[value] = idealTrainYFrequency - actualFrequency
 
     def _fixTrainYImbalance(self):
-        df['__trainY__'] = self.trainY
+        self.df['__trainY__'] = self.trainY
         for value in self.trainYMappings.values():
             samplesToGet = self.trainYUpsamplesNeeded[value]
             if samplesToGet > 0:
@@ -317,3 +322,21 @@ class Neat:
             if column not in self.finalColumnNames:
                 columnsToDrop.append(column)
         self.df = self.df.drop(columnsToDrop, axis=1)
+
+### throwaway test:
+# df = pd.DataFrame({'col2': [None,None,None,9,5,10,11,12,13,14,None,None,None,9,5,10,11,12,13,14,11,12,13,14,None,None,None,9,5,10,11,12,13,14,None,None,None,9,5,10,11,12,13,14,11,12,13,14]
+#                   , 'col3': ['test1','test1','test1','test3',None,None,'test1','test1','test2','test2','test1','test1','test1','test1',None,None,'test1','test1','test2','test2', 'test1','test1','test2','test2','test1','test1','test1','test1',None,None,'test1','test1','test2','test2','test1','test1','test1','test1',None,None,'test1','test1','test2','test2', 'test1','test1','test2','test2']
+#                   , 'col4': [None, 5, 3 ,6 ,8, 9, 14, 87, 999 ,9999,None, 5, 3 ,6 ,8, 9, 14, 87, 999 ,9999, 14, 87, 999 ,9999,None, 5, 3 ,6 ,8, 9, 14, 87, 999 ,9999,None, 5, 3 ,6 ,8, 9, 14, 87, 999 ,9999, 14, 87, 999 ,9999]
+#                   , 'col5': ['a','a',None,None,'adsf','bas',None,None,None,None,None,None,None,None,'adsf','bas',None,None,None,None,None,None,None,None,'a','a',None,None,'adsf','bas',None,None,None,None,None,None,None,None,'adsf','bas',None,None,None,None,None,None,None,None]})
+#
+# targetY = ['a','b','c','a','a','g','b','a','i','t','a','b','c','a','a','g','b','a','i','t','b','a','i','t','a','b','c','a','a','g','b','a','i','t','a','b','c','a','a','g','b','a','i','t','b','a','i','t']
+# indexColumns = ['col4']
+#
+# neat = Neat(df, targetY, indexColumns)
+#
+# print(neat.df)
+# #df = neat.df
+#
+# neat.cleanNewData(df)
+#
+# neat.df
