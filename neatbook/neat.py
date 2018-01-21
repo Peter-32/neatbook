@@ -267,14 +267,17 @@ class Neat:
             self.trainYUpsamplesNeeded[value] = idealTrainYFrequency - actualFrequency
 
     def _fixTrainYImbalance(self):
+        df['__trainY__'] = self.trainY
         for value in self.trainYMappings.values():
             samplesToGet = self.trainYUpsamplesNeeded[value]
             if samplesToGet > 0:
-                upsampleRows = resample(self.df[self.df[self.trainY]==value],
+                upsampleRows = resample(self.df[self.df['__trainY__']==value],
                                     replace=True,
                                     n_samples=samplesToGet,
                                     random_state=123)
                 self.df = pd.concat([self.df, upsampleRows])
+        self.trainY = self.df['__trainY__'].values
+        self.df = self.df.drop(['__trainY__'], 1)
 
     ########## Index ##########
 
