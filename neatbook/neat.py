@@ -8,10 +8,10 @@ class Neat:
 
     def __init__(self, trainX, trainY, indexColumns=[], skipColumns=[]):
         if len(trainY) != len(trainX.index):
-            print("Error: trainX and trainY are differing lengths")
+            raise Exception('Error: trainX and trainY are differing lengths')
             return
         self.df = trainX
-        self.trainY = trainY
+        self.trainY = a = np.array( trainY )
         self.indexColumns = self._cleanColumnNamesArray(indexColumns)
         self.skipColumns = self._cleanColumnNamesArray(skipColumns)
         self.newData = None
@@ -79,8 +79,14 @@ class Neat:
         self._newDataAddMissingFinalColumnNames()
         self._newDataDropExtraColumnNames()
 
-    def getMappingOfYNumberToString(self, YNumbers):
-        return np.vectorize(self.trainYMappingsReversed.get)(YNumbers)
+    def getMappingOfYNumberToString(self, newDataY):
+        newDataYAsNumpy = np.array( newDataY )
+        output = None
+        if newDataYAsNumpy.dtype.kind in {'U', 'S'}:
+            output = np.vectorize(self.trainYMappingsReversed.get)(newDataYAsNumpy)
+        else:
+            output = newDataYAsNumpy
+        return output
 
     def _cleanColumnNamesArray(self, columns):
         if type(columns) == str:
@@ -102,7 +108,7 @@ class Neat:
     ########## TrainY ##########
 
     def _setTrainYMappings(self):
-        if self.trainY.dtype == 'object': # a string
+        if self.trainY.dtype.kind in {'U', 'S'}: # a string
             i = 0
             for value in np.unique(self.trainY):
                 if value != None and value.strip() != "":
@@ -111,7 +117,7 @@ class Neat:
                     i = i + 1
 
     def _convertTrainYToNumeric(self):
-        if self.trainY.dtype == 'object': # a string
+        if self.trainY.dtype.kind in {'U', 'S'}: # a string
             self.trainY = np.vectorize(self.trainYMappings.get)(self.trainY)
 
     def _dropNATrainYRows(self):
@@ -129,7 +135,7 @@ class Neat:
     def _setColumnDataTypes(self):
         columns = self.df.columns.values.tolist()
         for column in columns:
-            if column in indexColumns or column in skipColumns:
+            if column in self.indexColumns or column in self.skipColumns:
                 continue
             elif self.df[column].dtype == 'int64' or self.df[column].dtype == 'float64':
                 self.numberColumns.append(column)
