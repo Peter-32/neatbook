@@ -15,8 +15,8 @@ class Neat:
         self.indexColumns = self._cleanColumnNamesArray(indexColumns)
         self.skipColumns = self._cleanColumnNamesArray(skipColumns)
         self.newData = None
-        self.trainYMappings = {}
-        self.trainYMappingsReversed = {}
+        self.trainYMappingsStrToNum = {'NotFound': -99}
+        self.trainYMappingsNumToStr = {-99: 'NotFound'}
         self.numberColumns = []
         self.categoryColumns = []
         self.datetimeColumns = []
@@ -79,16 +79,41 @@ class Neat:
         self._newDataAddMissingFinalColumnNames()
         self._newDataDropExtraColumnNames()
 
-    ########## Getting Started ##########
+    def getYAsString(self, newDataY):
+        output = None
+        if newDataYAsNumpy.dtype.kind in {'U', 'S'}: # a string
+            for i in range(0,len(newDataY)):
+                if newDataY[i] not in trainYMappingsNumToStr.values():
+                    newDataY[i] = 'NotFound'
+            newDataYAsNumpy = np.array( newDataY )
+            output = newDataYAsNumpy
 
-    def getMappingOfYNumberToString(self, newDataY):
+        else:
+            for i in range(0,len(newDataY)):
+                if newDataY[i] not in trainYMappingsNumToStr.keys():
+                    newDataY[i] = 'NotFound'
+            newDataYAsNumpy = np.array( newDataY )
+            output = np.vectorize(self.trainYMappingsNumToStr.get)(newDataYAsNumpy)
+        return output
+
+    def getYAsNumber(self, newDataY):
+
         newDataYAsNumpy = np.array( newDataY )
         output = None
-        if newDataYAsNumpy.dtype.kind in {'U', 'S'}:
-            output = np.vectorize(self.trainYMappingsReversed.get)(newDataYAsNumpy)
+        if newDataYAsNumpy.dtype.kind in {'U', 'S'}: # a string
+            for i in range(0,len(newDataY)):
+                if newDataY[i] not in trainYMappingsStrToNum.keys():
+                    newDataY[i] = 'NotFound'
+            output = np.vectorize(self.trainYMappingsStrToNum.get)(newDataYAsNumpy)
+
         else:
+            for i in range(0,len(newDataY)):
+                if newDataY[i] not in trainYMappingsStrToNum.values():
+                    newDataY[i] = 'NotFound'
             output = newDataYAsNumpy
         return output
+
+    ########## Getting Started ##########
 
     def _cleanColumnNamesArray(self, columns):
         if type(columns) == str:
@@ -108,13 +133,13 @@ class Neat:
             i = 0
             for value in np.unique(self.trainY):
                 if value != None and value.strip() != "":
-                    self.trainYMappings[value] = i
-                    self.trainYMappingsReversed[i] = value
+                    self.trainYMappingsStrToNum[value] = i
+                    self.trainYMappingsNumToStr[i] = value
                     i = i + 1
 
     def _convertTrainYToNumeric(self):
         if self.trainY.dtype.kind in {'U', 'S'}: # a string
-            self.trainY = np.vectorize(self.trainYMappings.get)(self.trainY)
+            self.trainY = np.vectorize(self.trainYMappingsStrToNum.get)(self.trainY)
 
     def _dropNATrainYRows(self):
         rowsToDrop = []
@@ -265,21 +290,21 @@ class Neat:
 
     def _saveTrainYUpsamplesNeeded(self):
         maxValue = None
-        for value in self.trainYMappings.values():
+        for value in self.trainYMappingsStrToNum.values():
             frequency = self.trainYFrequencies[value]
             if maxValue == None or frequency > maxValue:
                 maxValue = frequency
 
         minValue = ceil(maxValue / 2)
 
-        for value in self.trainYMappings.values():
+        for value in self.trainYMappingsStrToNum.values():
             actualFrequency = self.trainYFrequencies[value]
             idealTrainYFrequency = minValue if actualFrequency < minValue else actualFrequency
             self.trainYUpsamplesNeeded[value] = idealTrainYFrequency - actualFrequency
 
     def _fixTrainYImbalance(self):
         self.df['__trainY__'] = self.trainY
-        for value in self.trainYMappings.values():
+        for value in self.trainYMappingsStrToNum.values():
             samplesToGet = self.trainYUpsamplesNeeded[value]
             if samplesToGet > 0:
                 upsampleRows = resample(self.df[self.df['__trainY__']==value],

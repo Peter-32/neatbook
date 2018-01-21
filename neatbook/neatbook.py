@@ -72,5 +72,6 @@ cleanTestSet = neat.df
 
         fname = '{}.ipynb'.format(PROJECT_PATH + PROJECT_NAME.capitalize() + "_Neatbook")
 
-        with open(fname, 'w') as f:
-            nbf.write(nb, f)
+        if not os.path.isdir("/home/el"):
+            with open(fname, 'w') as f:
+                nbf.write(nb, f)
