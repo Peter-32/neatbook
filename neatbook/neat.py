@@ -82,16 +82,16 @@ class Neat:
     def getYAsString(self, newDataY):
         output = None
         newDataYAsNumpy = np.array( newDataY )
-        if newDataYAsNumpy.dtype.kind in {'U', 'S'}: # a string
-            for i in range(0,len(newDataY)):
-                if newDataY[i] not in trainYMappingsNumToStr.values():
+        if newDataYAsNumpy.dtype.kind in {'O', 'U', 'S'}: # a string
+            for i in newDataY.index:
+                if newDataY[i] not in self.trainYMappingsNumToStr.values():
                     newDataY[i] = 'NotFound'
             newDataYAsNumpy = np.array( newDataY )
             output = newDataYAsNumpy
 
         else:
-            for i in range(0,len(newDataY)):
-                if newDataY[i] not in trainYMappingsNumToStr.keys():
+            for i in newDataY.index:
+                if newDataY[i] not in self.trainYMappingsNumToStr.keys():
                     newDataY[i] = -99
             newDataYAsNumpy = np.array( newDataY )
             output = np.vectorize(self.trainYMappingsNumToStr.get)(newDataYAsNumpy)
@@ -100,16 +100,16 @@ class Neat:
     def getYAsNumber(self, newDataY):
         output = None
         newDataYAsNumpy = np.array( newDataY )
-        if newDataYAsNumpy.dtype.kind in {'U', 'S'}: # a string
-            for i in range(0,len(newDataY)):
-                if newDataY[i] not in trainYMappingsStrToNum.keys():
+        if newDataYAsNumpy.dtype.kind in {'O', 'U', 'S'}: # a string
+            for i in newDataY.index:
+                if newDataY[i] not in self.trainYMappingsStrToNum.keys():
                     newDataY[i] = 'NotFound'
             newDataYAsNumpy = np.array( newDataY )
             output = np.vectorize(self.trainYMappingsStrToNum.get)(newDataYAsNumpy)
 
         else:
-            for i in range(0,len(newDataY)):
-                if newDataY[i] not in trainYMappingsStrToNum.values():
+            for i in newDataY.index:
+                if newDataY[i] not in self.trainYMappingsStrToNum.values():
                     newDataY[i] = -99
             newDataYAsNumpy = np.array( newDataY )
             output = newDataYAsNumpy
@@ -131,7 +131,7 @@ class Neat:
     ########## TrainY ##########
 
     def _setTrainYMappings(self):
-        if self.trainY.dtype.kind in {'U', 'S'}: # a string
+        if self.trainY.dtype.kind in {'O', 'U', 'S'}: # a string
             i = 0
             for value in np.unique(self.trainY):
                 if value != None and value.strip() != "":
@@ -140,20 +140,18 @@ class Neat:
                     i = i + 1
 
     def _convertTrainYToNumeric(self):
-        if self.trainY.dtype.kind in {'U', 'S'}: # a string
+        if self.trainY.dtype.kind in {'O', 'U', 'S'}: # a string
             self.trainY = np.vectorize(self.trainYMappingsStrToNum.get)(self.trainY)
 
     def _dropNATrainYRows(self):
         rowsToDrop = []
-        for i in range(0,len(self.trainY)):
-            rowsToDrop.append(i) if np.isnan(self.trainY[i]) else None
-        self._dropRowsFromDFAndTrainY(rowsToDrop)
-
-    def _dropRowsFromDFAndTrainY(self, rowsToDrop):
+        #for i in range(0,len(self.trainY)):
+        self.df['__trainY__'] = self.trainY
+        for i, row in self.df.iterrows():
+            rowsToDrop.append(i) if np.isnan(row['__trainY__']) else None
         self.df = self.df.drop(self.df.index[rowsToDrop])
-        mask = np.ones(len(self.trainY), np.bool)
-        mask[rowsToDrop] = 0
-        self.trainY = self.trainY[mask]
+        self.trainY = self.df['__trainY__'].values
+        self.df = self.df.drop(['__trainY__'], 1)
 
     ########## Column Metadata ##########
 
@@ -180,14 +178,14 @@ class Neat:
         if self.indexColumns != []:
             self.df['__trainY__'] = self.trainY
             self.df = self.df.drop_duplicates(subset=self.indexColumns)
-            self.trainY = self.df['__trainY__'].values
-            self.df = self.df.drop(['__trainY__'], 1)
 
             for i, row in self.df.iterrows():
                 for column in self.indexColumns:
                     if ((self.df[column].dtype == 'int64' or self.df[column].dtype == 'float64') and (np.isnan(row[column]) or np.isinf(row[column]))) or row[column] == None:
                         rowsToDrop.append(i)
-        self._dropRowsFromDFAndTrainY(rowsToDrop)
+            self.df = self.df.drop(self.df.index[rowsToDrop])
+            self.trainY = self.df['__trainY__'].values
+            self.df = self.df.drop(['__trainY__'], 1)
 
     ########## Datetimes ##########
 
@@ -293,6 +291,8 @@ class Neat:
     def _saveTrainYUpsamplesNeeded(self):
         maxValue = None
         for value in self.trainYMappingsStrToNum.values():
+            if value == -99:
+                continue
             frequency = self.trainYFrequencies[value]
             if maxValue == None or frequency > maxValue:
                 maxValue = frequency
@@ -300,6 +300,8 @@ class Neat:
         minValue = ceil(maxValue / 2)
 
         for value in self.trainYMappingsStrToNum.values():
+            if value == -99:
+                continue
             actualFrequency = self.trainYFrequencies[value]
             idealTrainYFrequency = minValue if actualFrequency < minValue else actualFrequency
             self.trainYUpsamplesNeeded[value] = idealTrainYFrequency - actualFrequency
@@ -307,6 +309,8 @@ class Neat:
     def _fixTrainYImbalance(self):
         self.df['__trainY__'] = self.trainY
         for value in self.trainYMappingsStrToNum.values():
+            if value == -99:
+                continue
             samplesToGet = self.trainYUpsamplesNeeded[value]
             if samplesToGet > 0:
                 upsampleRows = resample(self.df[self.df['__trainY__']==value],
