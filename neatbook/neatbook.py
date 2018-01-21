@@ -3,7 +3,7 @@ import os
 import nbformat as nbf
 import re
 
-class NeatNotebook:
+class Neatbook:
     def __init__(self, ):
         PROJECT_FILE = os.path.realpath(os.path.basename(sys.argv[0]))
         PROJECT_PATH = re.match("(.*[/\\\])", PROJECT_FILE).group(1)
@@ -12,7 +12,7 @@ class NeatNotebook:
         nb = nbf.v4.new_notebook()
 
         header1 = """\
-# {}
+# {} Neatbook
 #### Initialize variables""".format(PROJECT_NAME.capitalize())
 
         code1 = """\
@@ -70,7 +70,7 @@ cleanTestSet = neat.df
                        nbf.v4.new_code_cell(code3),
                        nbf.v4.new_markdown_cell(header4) ]
 
-        fname = '{}.ipynb'.format(PROJECT_PATH + PROJECT_NAME.capitalize() + "_Notebook")
+        fname = '{}.ipynb'.format(PROJECT_PATH + PROJECT_NAME.capitalize() + "_Neatbook")
 
         with open(fname, 'w') as f:
             nbf.write(nb, f)
