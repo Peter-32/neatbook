@@ -6,13 +6,14 @@ from math import ceil
 
 class Neat:
 
-    def __init__(self, df, targetY, indexColumns=[], skipColumns=[]):
-        self.df = df
-        self.targetY = self._cleanColumnName(targetY)
+    def __init__(self, trainX, trainY, indexColumns=[], skipColumns=[]):
+        self.df = trainX
+        self.trainY = trainY
         self.indexColumns = self._cleanColumnNamesArray(indexColumns)
         self.skipColumns = self._cleanColumnNamesArray(skipColumns)
         self.newData = None
-        self.targetYMappings = {}
+        self.trainYMappings = {}
+        self.trainYMappingsReversed = {}
         self.numberColumns = []
         self.categoryColumns = []
         self.datetimeColumns = []
@@ -22,14 +23,14 @@ class Neat:
         self.uniqueCategoryValues = {}
         self.valuesThatDontMapTo_Other = {}
         self.categoryFrequencies = {}
-        self.targetYFrequencies = {}
-        self.targetYUpsamplesNeeded = {}
+        self.trainYFrequencies = {}
+        self.trainYUpsamplesNeeded = {}
         self.finalColumnNames = []
         self.columnsDropped = []
-        # TargetY
-        self._setTargetYMappings()
-        self._convertTargetYToNumeric()
-        self._dropNATargetYRows()
+        # TrainY
+        self._setTrainYMappings()
+        self._convertTrainYToNumeric()
+        self._dropNATrainYRows()
         # Column Metadata
         self._cleanColumnNamesDF()
         self._setColumnDataTypes()
@@ -48,9 +49,9 @@ class Neat:
         self._fixMissingCategoryValuesAndMapValuesTo_Other()
         self._applyOneHotEncoding()
         # Class Imbalance
-        self._saveTargetYFrequencies()
-        self._saveTargetYUpsamplesNeeded()
-        self._fixTargetYImbalance()
+        self._saveTrainYFrequencies()
+        self._saveTrainYUpsamplesNeeded()
+        self._fixTrainYImbalance()
         # Index
         self._addIndex()
         # Get Final Column Names
@@ -75,6 +76,9 @@ class Neat:
         self._newDataAddMissingFinalColumnNames()
         self._newDataDropExtraColumnNames()
 
+    def getMappingOfYNumberToString(self, YNumbers):
+        return np.vectorize(self.trainYMappingsReversed.get)(YNumbers)
+
     def _cleanColumnNamesArray(self, columns):
         if type(columns) == str:
             columns = [columns]
@@ -86,24 +90,25 @@ class Neat:
     def _cleanColumnName(self, string):
         return string.strip().lower().replace(' ', '_')
 
-    ########## TargetY ##########
+    ########## TrainY ##########
 
-    def _setTargetYMappings(self):
-        if self.df[self.targetY].dtype == 'object': # a string
+    def _setTrainYMappings(self):
+        if self.trainY.dtype == 'object': # a string
             i = 0
-            for value in self.df[self.targetY].unique():
+            for value in np.unique(self.trainY):
                 if value != None and value.strip() != "":
-                    self.targetYMappings[value] = i
+                    self.trainYMappings[value] = i
+                    self.trainYMappingsReversed[i] = value
                     i = i + 1
 
-    def _convertTargetYToNumeric(self):
-        if self.df[self.targetY].dtype == 'object': # a string
-            self.df[self.targetY] = self.df[self.targetY].map(self.targetYMappings)
+    def _convertTrainYToNumeric(self):
+        if self.trainY.dtype == 'object': # a string
+            self.trainY = np.vectorize(self.trainYMappings.get)(trainY)
 
-    def _dropNATargetYRows(self):
+    def _dropNATrainYRows(self):
         rowsToDrop = []
         for i, row in self.df.iterrows():
-            rowsToDrop.append(i) if np.isnan(row[self.targetY]) else None
+            rowsToDrop.append(i) if np.isnan(row[self.trainY]) else None
         self.df = self.df.drop(self.df.index[rowsToDrop])
 
     ########## Column Metadata ##########
@@ -114,7 +119,7 @@ class Neat:
     def _setColumnDataTypes(self):
         columns = self.df.columns.values.tolist()
         for column in columns:
-            if column == self.targetY or column in indexColumns or column in skipColumns:
+            if column == self.trainY or column in indexColumns or column in skipColumns:
                 continue
             elif self.df[column].dtype == 'int64' or self.df[column].dtype == 'float64':
                 self.numberColumns.append(column)
@@ -234,28 +239,28 @@ class Neat:
 
     ########## Class Imbalance ##########
 
-    def _saveTargetYFrequencies(self):
-        self.targetYFrequencies = pd.value_counts(self.df[self.targetY].values, sort=True, normalize=False)
+    def _saveTrainYFrequencies(self):
+        self.trainYFrequencies = pd.value_counts(self.df[self.trainY].values, sort=True, normalize=False)
 
-    def _saveTargetYUpsamplesNeeded(self):
+    def _saveTrainYUpsamplesNeeded(self):
         maxValue = None
-        for value in self.targetYMappings.values():
-            frequency = self.targetYFrequencies[value]
+        for value in self.trainYMappings.values():
+            frequency = self.trainYFrequencies[value]
             if maxValue == None or frequency > maxValue:
                 maxValue = frequency
 
         minValue = ceil(maxValue / 2)
 
-        for value in self.targetYMappings.values():
-            actualFrequency = self.targetYFrequencies[value]
-            idealTargetYFrequency = minValue if actualFrequency < minValue else actualFrequency
-            self.targetYUpsamplesNeeded[value] = idealTargetYFrequency - actualFrequency
+        for value in self.trainYMappings.values():
+            actualFrequency = self.trainYFrequencies[value]
+            idealTrainYFrequency = minValue if actualFrequency < minValue else actualFrequency
+            self.trainYUpsamplesNeeded[value] = idealTrainYFrequency - actualFrequency
 
-    def _fixTargetYImbalance(self):
-        for value in self.targetYMappings.values():
-            samplesToGet = self.targetYUpsamplesNeeded[value]
+    def _fixTrainYImbalance(self):
+        for value in self.trainYMappings.values():
+            samplesToGet = self.trainYUpsamplesNeeded[value]
             if samplesToGet > 0:
-                upsampleRows = resample(self.df[self.df[self.targetY]==value],
+                upsampleRows = resample(self.df[self.df[self.trainY]==value],
                                     replace=True,
                                     n_samples=samplesToGet,
                                     random_state=123)
