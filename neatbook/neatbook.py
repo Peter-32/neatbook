@@ -23,7 +23,9 @@ import numpy as np
 df = pd.read_csv("iris.csv") ## Edit: Your dataset
 print(df.describe(include = [np.number]))
 print(df.describe(include = ['O']))
+print(df.dtypes)
 df.head()
+
 """
 
         header2 = """\

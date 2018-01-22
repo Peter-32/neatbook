@@ -12,6 +12,7 @@ class Neat:
             return
         self.df = trainX
         self.trainY = np.array( trainY )
+        self.trainY = self.trainY.astype(object)
         self.indexColumns = self._cleanColumnNamesArray(indexColumns)
         self.skipColumns = self._cleanColumnNamesArray(skipColumns)
         self.newData = None
@@ -228,7 +229,7 @@ class Neat:
         for column in self.categoryColumns:
             self.uniqueCategoryValues[column] = []
             for value in self.df[column].unique():
-                if value == None:
+                if value == None or pd.isnull(value):
                     continue
                 self.uniqueCategoryValues[column].append(value)
             self.uniqueCategoryValues[column].append('_Other')
