@@ -13,54 +13,237 @@ class Neatbook:
 
         header1 = """\
 # {} Neatbook
-#### Initialize variables""".format(PROJECT_NAME.capitalize())
+#### Get Data""".format(PROJECT_NAME.capitalize())
 
         code1 = """\
-from Neat.Neat import *
+import pandas as pd
+import numpy as np
 
-
-# Get the training set here
-trainingSet =
-# Get the test set here
-testSet =
-# Input the targetY value
-targetY = '*** column_name_here ***'
-# Optionally define these fields
-indexColumns = []
-skipColumns = []
-
-trainingSet
+# Get data here
+df = pd.read_csv("iris.csv") ## Edit: Your dataset
+print(df.describe(include = [np.number]))
+print(df.describe(include = ['O']))
+df.head()
 """
 
         header2 = """\
-#### Clean Data"""
+#### Initialize variables"""
 
         code2 = """\
-# Clean training set
-neat =  Neat(self, trainingSet, targetY, indexColumns, skipColumns)
-cleanTrainingSet = neat.df
+from sklearn.model_selection import train_test_split
 
-# Clean test set
-neat.cleanNewData(testSet)
-cleanTestSet = neat.df
+trainX, testX, trainY, testY = train_test_split(df.drop(['class'], axis=1), ## Edit: Replace class with the Y column name
+                                                    df['class'], train_size=0.75, test_size=0.25) ## Edit: Same
+
+indexColumns = [] ## Edit: Optionally add column names
+skipColumns = [] ## Edit: Optionally add column names
+
+print("trainX\\n")
+print(trainX.head())
+print("\\ntrainY\\n")
+print(trainY.head())
 """
 
         header3 = """\
-#### Run TPOT"""
+#### Clean Data"""
 
         code3 = """\
-# Call TPOT
+from neatbook.neat import *
 
-# Call script that takes the python code and loads everything into the next notebook section
+# Clean training set
+neat =  Neat(trainX, trainY, indexColumns, skipColumns)
+cleanTrainX = neat.df
+cleanTrainY = neat.trainY
+
+# Clean test set
+neat.cleanNewData(testX)
+cleanTestX = neat.df
+cleanTestY = neat.getYAsNumber(testY)
+
+print("Cleaning done")
 """
 
         header4 = """\
-#### Reload the Page After TPOT Is Done"""
+#### Review Cleaned Data"""
 
-#IMPORTANT !@$!@#$!@#$!@#$
-#        code4 = """\
-## Copy/paste TPOT generated code here
-#"""
+        code4 = """\
+print(cleanTrainX.describe(include = [np.number]))
+print(cleanTrainX.head())
+
+print(cleanTrainY)
+
+
+print(cleanTestX.describe(include = [np.number]))
+print(cleanTestX.head())
+
+
+print(cleanTestY)
+"""
+
+        header5 = """\
+#### Run TPOT"""
+
+        code5 = """\
+from tpot import TPOTClassifier
+
+tpot = TPOTClassifier(max_time_mins=5, ## Edit: Set to 480 to train for 8 hours
+                      population_size=100, max_eval_time_mins=5, verbosity=2)
+tpot.fit(cleanTrainX, cleanTrainY)
+print(tpot.score(cleanTestX, cleanTestY))
+tpot.export('tpot_pipeline.py')
+
+print("\\n\\nTPOT is done.")
+"""
+
+        header6 = """\
+## Run this after TPOT is done
+
+Creates the Python_Training_Test.py file.  That file creates the optional Python_Test.py file.
+
+- **Python_Training_Test.py:** Train the model from TPOT.  Test it on a test set.
+- **Python_Test.py:** Used to test new data without model training.  The model is saved to disk during the Python_Training_Test.py script run."""
+
+        code6 = """\
+with open('Python_Training_Test.py', 'w') as fileOut:
+    with open('tpot_pipeline.py', 'r') as fileIn:
+        for line in fileIn:
+            if line.startswith("import") or line.startswith("from "):
+                fileOut.write(line)
+    fileOut.write(\"\"\"from neatbook.neat import *
+from sklearn.metrics import confusion_matrix
+import pickle
+
+
+##### IF YOU HAVE 1 DATASET UNCOMMENT THIS CODE: #####
+
+# df = pd.read_csv('iris.csv') ## Edit: Your dataset
+# className = 'class' ## Edit: Replace class with the Y column name
+# trainX, testX, trainY, testY = train_test_split(df.drop([className], axis=1),
+#                                                     df[className], train_size=0.75, test_size=0.25)
+
+#######################################################
+
+##### IF YOU HAVE 2 DATASETS UNCOMMENT THIS CODE: #####
+
+# trainDf = pd.read_csv('train_iris.csv') ## Edit: Your dataset
+# testDf = pd.read_csv('test_iris.csv') ## Edit: Your dataset
+
+# className = 'class' ## Edit: Replace class with the Y column name
+# trainX = trainDf.drop([className], axis=1)
+# trainY = trainDf[className]
+# testX = testDf.drop([className], axis=1)
+# testY = testDf[className]
+
+#######################################################
+
+################### Set Variables: ####################
+
+indexColumns = [] ## Edit: Optionally add column names
+skipColumns = [] ## Edit: Optionally add column names
+
+#######################################################
+
+####################### Clean: ########################
+
+# Clean training set
+neat =  Neat(trainX, trainY, indexColumns, skipColumns)
+cleanTrainX = neat.df
+cleanTrainY = neat.trainY
+
+# Clean test set
+neat.cleanNewData(testX)
+cleanTestX = neat.df
+cleanTestY = neat.getYAsNumber(testY)
+
+#######################################################
+
+###################### Pipeline: ######################
+
+\"\"\")
+
+showNextLines = False
+with open('Python_Training_Test.py', 'a') as fileOut:
+    with open('tpot_pipeline.py', 'r') as fileIn:
+        for line in fileIn:
+            if line.startswith("# Score"):
+                showNextLines = True
+            elif showNextLines and not line.startswith("exported_pipeline.fit") and not line.startswith("results"):
+                fileOut.write(line)
+
+with open('Python_Training_Test.py', 'a') as fileOut:
+    fileOut.write(\"\"\"exported_pipeline.fit(trainX, trainY)
+results = exported_pipeline.predict(testX)
+
+#######################################################
+
+################## Confusion Matrix: ##################
+
+print("Confusion Matrix:\\n")
+print(confusion_matrix(cleanTestY, results))
+
+#######################################################
+
+############ Create Python_Test.py File: ##############
+
+def save_object(obj, filename):
+    with open(filename, 'wb') as output:
+        pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
+
+save_object(neat, 'neat.pkl')
+save_object(exported_pipeline, 'exported_pipeline.pkl')
+save_object(indexColumns, 'indexColumns.pkl')
+save_object(skipColumns, 'skipColumns.pkl')
+save_object(className, 'className.pkl')
+
+
+with open('Python_Test.py', 'w') as fileOut:
+    fileOut.write(\\\"\\\"\\\"
+#################### Get Dataset: #####################
+
+testDf = pd.read_csv('test_iris.csv') ## Edit: Your dataset
+testX = testDf.drop([className], axis=1)
+
+#######################################################
+
+################### Set Variables: ####################
+
+with open('neat.pkl', 'rb') as input:
+    neat = pickle.load(input)
+with open('exported_pipeline.pkl', 'rb') as input:
+    exported_pipeline = pickle.load(input)
+with open('indexColumns.pkl', 'rb') as input:
+    indexColumns = pickle.load(input)
+with open('skipColumns.pkl', 'rb') as input:
+    skipColumns = pickle.load(input)
+with open('className.pkl', 'rb') as input:
+    className = pickle.load(input)
+
+#######################################################
+
+####################### Clean: ########################
+
+neat.cleanNewData(testX)
+cleanTestX = neat.df
+
+#######################################################
+
+###################### Predict: #######################
+
+results = exported_pipeline.predict(cleanTestX)
+resultsDf = pd.DataFrame(results)
+submitDf = pd.concat([testDf, resultsDf], axis=1)
+submitDf.to_csv('./submit.csv')
+print("Done")
+print(results)
+
+#######################################################
+
+#######################################################
+\\\"\\\"\\\"
+\"\"\")
+
+print("Done creating your Python_Training_Test.py")
+"""
 
         nb['cells'] = [nbf.v4.new_markdown_cell(header1),
                        nbf.v4.new_code_cell(code1),
@@ -68,10 +251,15 @@ cleanTestSet = neat.df
                        nbf.v4.new_code_cell(code2),
                        nbf.v4.new_markdown_cell(header3),
                        nbf.v4.new_code_cell(code3),
-                       nbf.v4.new_markdown_cell(header4) ]
+                       nbf.v4.new_markdown_cell(header4),
+                       nbf.v4.new_code_cell(code4),
+                       nbf.v4.new_markdown_cell(header5),
+                       nbf.v4.new_code_cell(code5),
+                       nbf.v4.new_markdown_cell(header6),
+                       nbf.v4.new_code_cell(code6) ]
 
         fname = '{}.ipynb'.format(PROJECT_PATH + PROJECT_NAME.capitalize() + "_Neatbook")
 
-        if not os.path.isdir("/home/el"):
+        if not os.path.isfile(fname):
             with open(fname, 'w') as f:
                 nbf.write(nb, f)
