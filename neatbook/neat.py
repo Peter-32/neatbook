@@ -12,7 +12,7 @@ class Neat:
             return
         self.df = trainX
         self.trainY = np.array( trainY )
-        self.trainY = self.trainY.astype(object)
+        self.trainY = self.trainY.astype(str)
         self.indexColumns = self._cleanColumnNamesArray(indexColumns)
         self.skipColumns = self._cleanColumnNamesArray(skipColumns)
         self.newData = None
@@ -85,14 +85,16 @@ class Neat:
         newDataYAsNumpy = np.array( newDataY )
         if newDataYAsNumpy.dtype.kind in {'O', 'U', 'S'}: # a string
             for i in newDataY.index:
-                if newDataY[i] not in self.trainYMappingsNumToStr.values():
+                if newDataY[i] == None or np.isnan(newDataY[i]) or newDataY[i] not in self.trainYMappingsNumToStr.values():
                     newDataY[i] = 'NotFound'
             newDataYAsNumpy = np.array( newDataY )
             output = newDataYAsNumpy
 
         else:
+            newDataY[newDataY == np.inf] = -99
+            newDataY[newDataY == -np.inf] = -99
             for i in newDataY.index:
-                if newDataY[i] not in self.trainYMappingsNumToStr.keys():
+                if np.isnan(newDataY[i]) or newDataY[i] not in self.trainYMappingsNumToStr.keys():
                     newDataY[i] = -99
             newDataYAsNumpy = np.array( newDataY )
             output = np.vectorize(self.trainYMappingsNumToStr.get)(newDataYAsNumpy)
@@ -103,14 +105,16 @@ class Neat:
         newDataYAsNumpy = np.array( newDataY )
         if newDataYAsNumpy.dtype.kind in {'O', 'U', 'S'}: # a string
             for i in newDataY.index:
-                if newDataY[i] not in self.trainYMappingsStrToNum.keys():
+                if newDataY[i] == None or np.isnan(newDataY[i]) or newDataY[i] not in self.trainYMappingsStrToNum.keys():
                     newDataY[i] = 'NotFound'
             newDataYAsNumpy = np.array( newDataY )
             output = np.vectorize(self.trainYMappingsStrToNum.get)(newDataYAsNumpy)
 
         else:
+            newDataY[newDataY == np.inf] = -99
+            newDataY[newDataY == -np.inf] = -99
             for i in newDataY.index:
-                if newDataY[i] not in self.trainYMappingsStrToNum.values():
+                if np.isnan(newDataY[i]) or newDataY[i] not in self.trainYMappingsStrToNum.values():
                     newDataY[i] = -99
             newDataYAsNumpy = np.array( newDataY )
             output = newDataYAsNumpy
@@ -231,7 +235,8 @@ class Neat:
             for value in self.df[column].unique():
                 if value == None or pd.isnull(value):
                     continue
-                self.uniqueCategoryValues[column].append(value)
+                else:
+                    self.uniqueCategoryValues[column].append(value)
             self.uniqueCategoryValues[column].append('_Other')
 
     def _saveCategoryFrequenciesAndValuesThatDontMapTo_Other(self):

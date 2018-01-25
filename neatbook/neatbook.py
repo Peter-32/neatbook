@@ -33,9 +33,9 @@ df.head()
 
         code2 = """\
 from sklearn.model_selection import train_test_split
-
-trainX, testX, trainY, testY = train_test_split(df.drop(['class'], axis=1), ## Edit: Replace class with the Y column name
-                                                    df['class'], train_size=0.75, test_size=0.25) ## Edit: Same
+className = 'class' ## Edit: Replace class with the Y column name
+trainX, testX, trainY, testY = train_test_split(df.drop([className], axis=1),
+                                                    df[className], train_size=0.75, test_size=0.25)
 
 indexColumns = [] ## Edit: Optionally add column names
 skipColumns = [] ## Edit: Optionally add column names
@@ -111,7 +111,8 @@ with open('Python_Training_Test.py', 'w') as fileOut:
         for line in fileIn:
             if line.startswith("import") or line.startswith("from "):
                 fileOut.write(line)
-    fileOut.write(\"\"\"from neatbook.neat import *
+    fileOut.write(\"\"\"from sklearn.metrics import accuracy_score
+from neatbook.neat import *
 from sklearn.metrics import confusion_matrix
 import pickle
 
@@ -150,7 +151,7 @@ skipColumns = [] ## Edit: Optionally add column names
 # Clean training set
 neat =  Neat(trainX, trainY, indexColumns, skipColumns)
 cleanTrainX = neat.df
-cleanTrainY = neat.trainY
+cleanTrainY = neat.getYAsNumber(trainY)
 
 # Clean test set
 neat.cleanNewData(testX)
@@ -173,15 +174,16 @@ with open('Python_Training_Test.py', 'a') as fileOut:
                 fileOut.write(line)
 
 with open('Python_Training_Test.py', 'a') as fileOut:
-    fileOut.write(\"\"\"exported_pipeline.fit(trainX, trainY)
-results = exported_pipeline.predict(testX)
+    fileOut.write(\"\"\"exported_pipeline.fit(cleanTrainX, cleanTrainY)
+results = exported_pipeline.predict(cleanTestX)
 
 #######################################################
 
 ################## Confusion Matrix: ##################
 
-print("Confusion Matrix:\\n")
+print("Confusion Matrix:")
 print(confusion_matrix(cleanTestY, results))
+print(accuracy_score(cleanTestY, results))
 
 #######################################################
 
@@ -200,10 +202,13 @@ save_object(className, 'className.pkl')
 
 with open('Python_Test.py', 'w') as fileOut:
     fileOut.write(\\\"\\\"\\\"
+
+import pandas as pd
+import pickle
+
 #################### Get Dataset: #####################
 
-testDf = pd.read_csv('test_iris.csv') ## Edit: Your dataset
-testX = testDf.drop([className], axis=1)
+testX = pd.read_csv('test_iris.csv') ## Edit: Your dataset
 
 #######################################################
 
@@ -233,7 +238,7 @@ cleanTestX = neat.df
 
 results = exported_pipeline.predict(cleanTestX)
 resultsDf = pd.DataFrame(results)
-submitDf = pd.concat([testDf, resultsDf], axis=1)
+submitDf = pd.concat([testX, resultsDf], axis=1)
 submitDf.to_csv('./submit.csv')
 print("Done")
 print(results)
@@ -241,7 +246,7 @@ print(results)
 #######################################################
 
 #######################################################
-\\\"\\\"\\\"
+\\\"\\\"\\\")
 \"\"\")
 
 print("Done creating your Python_Training_Test.py")
