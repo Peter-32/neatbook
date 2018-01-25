@@ -50,17 +50,17 @@ print(trainY.head())
 #### Clean Data"""
 
         code3 = """\
-from neatbook.neat import *
+from neatdata.neatdata import *
 
 # Clean training set
-neat =  Neat(trainX, trainY, indexColumns, skipColumns)
-cleanTrainX = neat.df
-cleanTrainY = neat.trainY
+neatdata =  NeatData(trainX, trainY, indexColumns, skipColumns)
+cleanTrainX = neatdata.df
+cleanTrainY = neatdata.trainY
 
 # Clean test set
-neat.cleanNewData(testX)
-cleanTestX = neat.df
-cleanTestY = neat.getYAsNumber(testY)
+neatdata.cleanNewData(testX)
+cleanTestX = neatdata.df
+cleanTestY = neatdata.getYAsNumber(testY)
 
 print("Cleaning done")
 """
@@ -112,7 +112,7 @@ with open('Python_Training_Test.py', 'w') as fileOut:
             if line.startswith("import") or line.startswith("from "):
                 fileOut.write(line)
     fileOut.write(\"\"\"from sklearn.metrics import accuracy_score
-from neatbook.neat import *
+from neatdata.neatdata import *
 from sklearn.metrics import confusion_matrix
 import pickle
 
@@ -149,14 +149,14 @@ skipColumns = [] ## Edit: Optionally add column names
 ####################### Clean: ########################
 
 # Clean training set
-neat =  Neat(trainX, trainY, indexColumns, skipColumns)
-cleanTrainX = neat.df
-cleanTrainY = neat.getYAsNumber(trainY)
+neatdata =  NeatData(trainX, trainY, indexColumns, skipColumns)
+cleanTrainX = neatdata.df
+cleanTrainY = neatdata.getYAsNumber(trainY)
 
 # Clean test set
-neat.cleanNewData(testX)
-cleanTestX = neat.df
-cleanTestY = neat.getYAsNumber(testY)
+neatdata.cleanNewData(testX)
+cleanTestX = neatdata.df
+cleanTestY = neatdata.getYAsNumber(testY)
 
 #######################################################
 
@@ -193,7 +193,7 @@ def save_object(obj, filename):
     with open(filename, 'wb') as output:
         pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 
-save_object(neat, 'neat.pkl')
+save_object(neatdata, 'neatdata.pkl')
 save_object(exported_pipeline, 'exported_pipeline.pkl')
 save_object(indexColumns, 'indexColumns.pkl')
 save_object(skipColumns, 'skipColumns.pkl')
@@ -214,8 +214,8 @@ testX = pd.read_csv('test_iris.csv') ## Edit: Your dataset
 
 ################### Set Variables: ####################
 
-with open('neat.pkl', 'rb') as input:
-    neat = pickle.load(input)
+with open('neatdata.pkl', 'rb') as input:
+    neatdata = pickle.load(input)
 with open('exported_pipeline.pkl', 'rb') as input:
     exported_pipeline = pickle.load(input)
 with open('indexColumns.pkl', 'rb') as input:
@@ -229,14 +229,15 @@ with open('className.pkl', 'rb') as input:
 
 ####################### Clean: ########################
 
-neat.cleanNewData(testX)
-cleanTestX = neat.df
+neatdata.cleanNewData(testX)
+cleanTestX = neatdata.df
 
 #######################################################
 
 ###################### Predict: #######################
 
 results = exported_pipeline.predict(cleanTestX)
+results = neatdata.getYAsString(results)
 resultsDf = pd.DataFrame(results)
 submitDf = pd.concat([testX, resultsDf], axis=1)
 submitDf.to_csv('./submit.csv')
