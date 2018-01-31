@@ -1,6 +1,6 @@
 # neatbook
 
-One line generates your Python project. Further configuration is optional. Save hours by learning this simple package.
+One line generates your Python project.  Further configuration is optional.  Save hours by learning this simple package.
 
 ## Install
 
