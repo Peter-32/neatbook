@@ -20,7 +20,7 @@ import pandas as pd
 import numpy as np
 
 # Get data here
-df = pd.read_csv("iris.csv") ## Edit: Your dataset
+df = pd.read_csv("iris.csv") # Edit: Your dataset
 print(df.describe(include = [np.number]))
 print(df.describe(include = ['O']))
 print(df.dtypes)
@@ -33,12 +33,12 @@ df.head()
 
         code2 = """\
 from sklearn.model_selection import train_test_split
-className = 'class' ## Edit: Replace class with the Y column name
+className = 'class' # Edit: Replace class with the Y column name
 trainX, testX, trainY, testY = train_test_split(df.drop([className], axis=1),
                                                     df[className], train_size=0.75, test_size=0.25)
 
-indexColumns = [] ## Edit: Optionally add column names
-skipColumns = [] ## Edit: Optionally add column names
+indexColumns = [] # Edit: Optionally add column names
+skipColumns = [] # Edit: Optionally add column names
 
 print("trainX\\n")
 print(trainX.head())
@@ -53,14 +53,14 @@ print(trainY.head())
 from neatdata.neatdata import *
 
 # Clean training set
-neatdata =  NeatData(trainX, trainY, indexColumns, skipColumns)
-cleanTrainX = neatdata.df
-cleanTrainY = neatdata.trainY
+neatdata =  NeatData()
+
+cleanTrainX, cleanTrainY = neatdata.cleanTrainingDataset(trainX, trainY, indexColumns, skipColumns)
 
 # Clean test set
-neatdata.cleanNewData(testX)
-cleanTestX = neatdata.df
-cleanTestY = neatdata.getYAsNumber(testY)
+cleanTestX = neatdata.cleanTestDataset(testX)
+
+cleanTestY = neatdata.convertYToNumbersForModeling(testY)
 
 print("Cleaning done")
 """
@@ -88,7 +88,7 @@ print(cleanTestY)
         code5 = """\
 from tpot import TPOTClassifier
 
-tpot = TPOTClassifier(max_time_mins=5, ## Edit: Set to 480 to train for 8 hours
+tpot = TPOTClassifier(max_time_mins=5, # Edit: Set to 480 to train for 8 hours
                       population_size=100, max_eval_time_mins=5, verbosity=2)
 tpot.fit(cleanTrainX, cleanTrainY)
 print(tpot.score(cleanTestX, cleanTestY))
@@ -100,13 +100,11 @@ print("\\n\\nTPOT is done.")
         header6 = """\
 ## Run this after TPOT is done
 
-Creates the Python_Training_Test.py file.  That file creates the optional Python_Test.py file.
-
-- **Python_Training_Test.py:** Train the model from TPOT.  Test it on a test set.
-- **Python_Test.py:** Used to test new data without model training.  The model is saved to disk during the Python_Training_Test.py script run."""
+Creates the modelpipeline.py file.  That file also creates the trainedmodelpipeline.py.
+"""
 
         code6 = """\
-with open('Python_Training_Test.py', 'w') as fileOut:
+with open('modelpipeline.py', 'w') as fileOut:
     with open('tpot_pipeline.py', 'r') as fileIn:
         for line in fileIn:
             if line.startswith("import") or line.startswith("from "):
@@ -116,141 +114,112 @@ from neatdata.neatdata import *
 from sklearn.metrics import confusion_matrix
 import pickle
 
+class ModelPipeline:
 
-##### IF YOU HAVE 1 DATASET UNCOMMENT THIS CODE: #####
+    def __init__(self):
+        self.indexColumns, self.skipColumns = None, None
+        self.neatData =  NeatData()
+        self.className = 'class' # Edit: Replace class with the Y column name
+        self.indexColumns = [] # Edit: Optionally add column names
+        self.skipColumns = [] # Edit: Optionally add column names
 
-# df = pd.read_csv('iris.csv') ## Edit: Your dataset
-# className = 'class' ## Edit: Replace class with the Y column name
-# trainX, testX, trainY, testY = train_test_split(df.drop([className], axis=1),
-#                                                     df[className], train_size=0.75, test_size=0.25)
 
-#######################################################
+    def execute(self):
+        trainX, testX, trainY, testY = self._getDatasetFrom________() # Edit: choose one of two functions
+        cleanTrainX, cleanTrainY, cleanTestX, cleanTestY = self._cleanDatasets()
 
-##### IF YOU HAVE 2 DATASETS UNCOMMENT THIS CODE: #####
+    def _getDatasetFromOneFile(self):
+        df = pd.read_csv('iris.csv') # Edit: Your dataset
+        trainX, testX, trainY, testY = train_test_split(df.drop([self.className], axis=1),
+                                                         df[self.className], train_size=0.75, test_size=0.25)
+        return trainX, testX, trainY, testY
 
-# trainDf = pd.read_csv('train_iris.csv') ## Edit: Your dataset
-# testDf = pd.read_csv('test_iris.csv') ## Edit: Your dataset
+    def _getDatasetFromTwoFiles(self):
+        trainingDf = pd.read_csv('train_iris.csv') # Edit: Your training dataset
+        testDf = pd.read_csv('test_iris.csv') # Edit: Your test dataset
+        trainX = trainingDf.drop([self.className], axis=1)
+        trainY = trainingDf[self.className]
+        testX = testDf.drop([self.className], axis=1)
+        testY = testDf[self.className]
+        return trainX, testX, trainY, testY
 
-# className = 'class' ## Edit: Replace class with the Y column name
-# trainX = trainDf.drop([className], axis=1)
-# trainY = trainDf[className]
-# testX = testDf.drop([className], axis=1)
-# testY = testDf[className]
+    def _cleanDatasets(self):
+        cleanTrainX, cleanTrainY = self.neatData.cleanTrainingDataset(trainX, trainY, indexColumns, skipColumns)
+        cleanTestX = self.neatData.cleanTestDataset(testX)
+        cleanTestY = self.neatData.convertYToNumbersForModeling(testY)
+        return cleanTrainX, cleanTrainY, cleanTestX, cleanTestY
 
-#######################################################
-
-################### Set Variables: ####################
-
-indexColumns = [] ## Edit: Optionally add column names
-skipColumns = [] ## Edit: Optionally add column names
-
-#######################################################
-
-####################### Clean: ########################
-
-# Clean training set
-neatdata =  NeatData(trainX, trainY, indexColumns, skipColumns)
-cleanTrainX = neatdata.df
-cleanTrainY = neatdata.getYAsNumber(trainY)
-
-# Clean test set
-neatdata.cleanNewData(testX)
-cleanTestX = neatdata.df
-cleanTestY = neatdata.getYAsNumber(testY)
-
-#######################################################
-
-###################### Pipeline: ######################
-
+    def _modelFit(self):
 \"\"\")
 
 showNextLines = False
-with open('Python_Training_Test.py', 'a') as fileOut:
+with open('modelpipeline.py', 'a') as fileOut:
     with open('tpot_pipeline.py', 'r') as fileIn:
         for line in fileIn:
             if line.startswith("# Score"):
                 showNextLines = True
             elif showNextLines and not line.startswith("exported_pipeline.fit") and not line.startswith("results"):
-                fileOut.write(line)
+                fileOut.write("\\t\\t" + line)
 
-with open('Python_Training_Test.py', 'a') as fileOut:
-    fileOut.write(\"\"\"exported_pipeline.fit(cleanTrainX, cleanTrainY)
-results = exported_pipeline.predict(cleanTestX)
+with open('modelpipeline.py', 'a') as fileOut:
+    fileOut.write(\"\"\"\\t\\texported_pipeline.fit(cleanTrainX, cleanTrainY)
+\\t\\tresults = exported_pipeline.predict(cleanTestX)
 
-#######################################################
+    def printModelScores(self):
+        print("Confusion Matrix:")
+        print(confusion_matrix(cleanTestY, results))
+        print(accuracy_score(cleanTestY, results))
 
-################## Confusion Matrix: ##################
+    def createTrainedModelPipelineFile(self):
 
-print("Confusion Matrix:")
-print(confusion_matrix(cleanTestY, results))
-print(accuracy_score(cleanTestY, results))
+        def save_object(obj, filename):
+            with open(filename, 'wb') as output:
+                pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 
-#######################################################
+        save_object(self, 'ModelPipeline.pkl')
 
-############ Create Python_Test.py File: ##############
-
-def save_object(obj, filename):
-    with open(filename, 'wb') as output:
-        pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
-
-save_object(neatdata, 'neatdata.pkl')
-save_object(exported_pipeline, 'exported_pipeline.pkl')
-save_object(indexColumns, 'indexColumns.pkl')
-save_object(skipColumns, 'skipColumns.pkl')
-save_object(className, 'className.pkl')
-
-
-with open('Python_Test.py', 'w') as fileOut:
-    fileOut.write(\\\"\\\"\\\"
+        with open('trainedmodelpipeline.py', 'w') as fileOut:
+            fileOut.write(\\\"\\\"\\\"
 
 import pandas as pd
 import pickle
 
-#################### Get Dataset: #####################
+class TrainedModelPipeline:
 
-testX = pd.read_csv('test_iris.csv') ## Edit: Your dataset
+    def __init__(self):
+        self.modelPipeline = None
+        self.cleanTestX = None
 
-#######################################################
+    def execute(self):
+        with open('ModelPipeline.pkl', 'rb') as input:
+            self.modelPipeline = pickle.load(input)
+        testX = self._getDataset()
+        self.cleanTestX = self._cleanDataset(testX)
+        results = self._predict()
+        resultsDf = self._concatenatePredictionsToDataframe(results)
+        self._saveResultsAsCSV(resultsDf)
+        print("Done.  Created results.csv")
 
-################### Set Variables: ####################
+    def _getDataset(self):
+        return pd.read_csv('test_iris.csv') # Edit: Your dataset
 
-with open('neatdata.pkl', 'rb') as input:
-    neatdata = pickle.load(input)
-with open('exported_pipeline.pkl', 'rb') as input:
-    exported_pipeline = pickle.load(input)
-with open('indexColumns.pkl', 'rb') as input:
-    indexColumns = pickle.load(input)
-with open('skipColumns.pkl', 'rb') as input:
-    skipColumns = pickle.load(input)
-with open('className.pkl', 'rb') as input:
-    className = pickle.load(input)
+    def _cleanDataset(self, testX):
+        return neatData.cleanTestDataset(testX)
 
-#######################################################
+    def _predict(self):
+        results = exported_pipeline.predict(self.cleanTestX)
+        return neatData.convertYToStringsOrNumbersForPresentation(results)
 
-####################### Clean: ########################
+    def _concatenatePredictionsToDataframe(self, results):
+        resultsDf = pd.DataFrame(results)
+        return pd.concat([testX, resultsDf], axis=1)
 
-neatdata.cleanNewData(testX)
-cleanTestX = neatdata.df
-
-#######################################################
-
-###################### Predict: #######################
-
-results = exported_pipeline.predict(cleanTestX)
-results = neatdata.getYAsString(results)
-resultsDf = pd.DataFrame(results)
-submitDf = pd.concat([testX, resultsDf], axis=1)
-submitDf.to_csv('./submit.csv')
-print("Done")
-print(results)
-
-#######################################################
-
-#######################################################
+    def _saveResultsAsCSV(self, resultsDf):
+        resultsDf.to_csv('./results.csv')
 \\\"\\\"\\\")
 \"\"\")
 
-print("Done creating your Python_Training_Test.py")
+print("Done creating modelpipeline.py")
 """
 
         nb['cells'] = [nbf.v4.new_markdown_cell(header1),
