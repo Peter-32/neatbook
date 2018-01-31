@@ -13,8 +13,8 @@ pip install neatbook
 1. Create a new project directory
 2. Create a python file with this code:
 
-from neatbook.neatbook import *
-Neatbook()
+    from neatbook.neatbook import *
+    Neatbook()
 
 3. Run the script from the command line
 4. Find and open the Jupyter Notebook created for you in the same directory
