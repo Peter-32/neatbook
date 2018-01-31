@@ -216,7 +216,15 @@ class TrainedModelPipeline:
 
     def _saveResultsAsCSV(self, resultsDf):
         resultsDf.to_csv('./results.csv')
+
+trainedModelPipeline = new TrainedModelPipeline()
+trainedModelPipeline.execute()        
 \\\"\\\"\\\")
+
+modelPipeline = new ModelPipeline()
+modelPipeline.execute()
+
+
 \"\"\")
 
 print("Done creating modelpipeline.py")
