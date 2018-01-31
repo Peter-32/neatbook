@@ -6,7 +6,7 @@ One line generates your Python project. Further configuration is optional. Save 
 
 Run this command:
 
-pip install neatbook
+        pip install neatbook
 
 ## Using
 
