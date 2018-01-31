@@ -1,6 +1,6 @@
 # neatbook
 
-One line generates your Python project.  Further configuration is optional.  Save hours by learning this simple package.
+One line generates your Python project. Further configuration is optional. Save hours by learning this simple package.
 
 ## Install
 
@@ -13,8 +13,8 @@ Run this command:
 1. Create a new project directory
 2. Create a python file with this code inside that directory:
 
-        from neatbook.neatbook import *
-        Neatbook()
+       from neatbook.neatbook import *
+       Neatbook()
 
 3. Execute this python script with the command line
 4. Find and open the Jupyter Notebook created for you in the same directory
