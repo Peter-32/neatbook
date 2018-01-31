@@ -11,7 +11,7 @@ pip install neatbook
 ## Using
 
 1. Create a new project directory
-2. Create a python file with this code:
+2. Create a python file with this code inside that directory:
 
       from neatbook.neatbook import *
       Neatbook()
