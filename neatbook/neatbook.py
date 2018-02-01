@@ -123,7 +123,7 @@ class ModelPipeline:
 
     def execute(self):
         trainX, testX, trainY, testY = self._getDatasetFrom________() # Edit: choose one of two functions
-        self._cleanDatasets()
+        self._cleanDatasets(trainX, testX, trainY, testY)
         self._modelFit()
         self._printModelScores()
         self._createTrainedModelPipelineFile()
@@ -145,8 +145,8 @@ class ModelPipeline:
         testY = testDf[self.className]
         return trainX, testX, trainY, testY
 
-    def _cleanDatasets(self):
-        self.cleanTrainX, self.cleanTrainY = self.neatData.cleanTrainingDataset(trainX, trainY, indexColumns, iWillManuallyCleanColumns)
+    def _cleanDatasets(self, trainX, testX, trainY, testY):
+        self.cleanTrainX, self.cleanTrainY = self.neatData.cleanTrainingDataset(trainX, trainY, self.indexColumns, self.iWillManuallyCleanColumns)
         self.cleanTestX = self.neatData.cleanTestDataset(testX)
         self.cleanTestY = self.neatData.convertYToNumbersForModeling(testY)
 
@@ -160,11 +160,12 @@ with open('modelpipeline.py', 'a') as fileOut:
             if line.startswith("# Score"):
                 showNextLines = True
             elif showNextLines and not line.startswith("exported_pipeline.fit") and not line.startswith("results"):
-                fileOut.write("\\t\\t" + line)
+                fileOut.write("        " + line)
 
 with open('modelpipeline.py', 'a') as fileOut:
-    fileOut.write(\"\"\"\\t\\texported_pipeline.fit(self.cleanTrainX, self.cleanTrainY)
-\\t\\tself.results = exported_pipeline.predict(self.cleanTestX)
+    fileOut.write(\"\"\"        self.exported_pipeline = exported_pipeline
+        self.exported_pipeline.fit(self.cleanTrainX, self.cleanTrainY)
+        self.results = self.exported_pipeline.predict(self.cleanTestX)
 
     def _printModelScores(self):
         print("Confusion Matrix:")
@@ -219,20 +220,20 @@ class TrainedModelPipeline:
 
     def _predict(self):
         self.results = self.exportedPipeline.predict(self.cleanTestX)
-        self.results = neatData.convertYToStringsOrNumbersForPresentation(self.results)
+        self.results = self.neatData.convertYToStringsOrNumbersForPresentation(self.results)
 
     def _concatenatePredictionsToDataframe(self):
         self.resultsDf = pd.DataFrame(self.results)
-        self.resultsDf = pd.concat([testX, resultsDf], axis=1)
+        self.resultsDf = pd.concat([self.testX, self.resultsDf], axis=1)
 
     def _saveResultsAsCSV(self):
         self.resultsDf.to_csv('./results.csv')
 
-trainedModelPipeline = new TrainedModelPipeline()
+trainedModelPipeline = TrainedModelPipeline()
 trainedModelPipeline.execute()
 \\\"\\\"\\\")
 
-modelPipeline = new ModelPipeline()
+modelPipeline = ModelPipeline()
 modelPipeline.execute()
 
 
