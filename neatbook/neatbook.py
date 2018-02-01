@@ -38,7 +38,7 @@ trainX, testX, trainY, testY = train_test_split(df.drop([className], axis=1),
                                                     df[className], train_size=0.75, test_size=0.25)
 
 indexColumns = [] # Edit: Optionally add column names
-skipColumns = [] # Edit: Optionally add column names
+iWillManuallyCleanColumns = [] # Edit: Optionally add column names
 
 print("trainX\\n")
 print(trainX.head())
@@ -52,14 +52,9 @@ print(trainY.head())
         code3 = """\
 from neatdata.neatdata import *
 
-# Clean training set
 neatdata =  NeatData()
-
-cleanTrainX, cleanTrainY = neatdata.cleanTrainingDataset(trainX, trainY, indexColumns, skipColumns)
-
-# Clean test set
+cleanTrainX, cleanTrainY = neatdata.cleanTrainingDataset(trainX, trainY, indexColumns, iWillManuallyCleanColumns)
 cleanTestX = neatdata.cleanTestDataset(testX)
-
 cleanTestY = neatdata.convertYToNumbersForModeling(testY)
 
 print("Cleaning done")
@@ -117,16 +112,23 @@ import pickle
 class ModelPipeline:
 
     def __init__(self):
-        self.indexColumns, self.skipColumns = None, None
+        self.indexColumns, self.iWillManuallyCleanColumns = None, None
         self.neatData =  NeatData()
         self.className = 'class' # Edit: Replace class with the Y column name
         self.indexColumns = [] # Edit: Optionally add column names
-        self.skipColumns = [] # Edit: Optionally add column names
+        self.iWillManuallyCleanColumns = [] # Edit: Optionally add column names
+        self.cleanTrainX, self.cleanTrainY, self.cleanTestX, self.cleanTestY = None, None, None, None
+        self.results = None
 
 
     def execute(self):
         trainX, testX, trainY, testY = self._getDatasetFrom________() # Edit: choose one of two functions
-        cleanTrainX, cleanTrainY, cleanTestX, cleanTestY = self._cleanDatasets()
+        self._cleanDatasets()
+        self._modelFit()
+        self._printModelScores()
+        self._createTrainedModelPipelineFile()
+        self._saveObjectsToDisk()
+        self._createTrainedModelPipelineFile()
 
     def _getDatasetFromOneFile(self):
         df = pd.read_csv('iris.csv') # Edit: Your dataset
@@ -144,10 +146,9 @@ class ModelPipeline:
         return trainX, testX, trainY, testY
 
     def _cleanDatasets(self):
-        cleanTrainX, cleanTrainY = self.neatData.cleanTrainingDataset(trainX, trainY, indexColumns, skipColumns)
-        cleanTestX = self.neatData.cleanTestDataset(testX)
-        cleanTestY = self.neatData.convertYToNumbersForModeling(testY)
-        return cleanTrainX, cleanTrainY, cleanTestX, cleanTestY
+        self.cleanTrainX, self.cleanTrainY = self.neatData.cleanTrainingDataset(trainX, trainY, indexColumns, iWillManuallyCleanColumns)
+        self.cleanTestX = self.neatData.cleanTestDataset(testX)
+        self.cleanTestY = self.neatData.convertYToNumbersForModeling(testY)
 
     def _modelFit(self):
 \"\"\")
@@ -162,22 +163,23 @@ with open('modelpipeline.py', 'a') as fileOut:
                 fileOut.write("\\t\\t" + line)
 
 with open('modelpipeline.py', 'a') as fileOut:
-    fileOut.write(\"\"\"\\t\\texported_pipeline.fit(cleanTrainX, cleanTrainY)
-\\t\\tresults = exported_pipeline.predict(cleanTestX)
+    fileOut.write(\"\"\"\\t\\texported_pipeline.fit(self.cleanTrainX, self.cleanTrainY)
+\\t\\tself.results = exported_pipeline.predict(self.cleanTestX)
 
-    def printModelScores(self):
+    def _printModelScores(self):
         print("Confusion Matrix:")
-        print(confusion_matrix(cleanTestY, results))
-        print(accuracy_score(cleanTestY, results))
+        print(confusion_matrix(self.cleanTestY, self.results))
+        print(accuracy_score(self.cleanTestY, self.results))
 
-    def createTrainedModelPipelineFile(self):
-
+    def _saveObjectsToDisk(self):
         def save_object(obj, filename):
             with open(filename, 'wb') as output:
                 pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 
-        save_object(self, 'ModelPipeline.pkl')
+        save_object(self.exported_pipeline, 'exportedPipeline.pkl')
+        save_object(self.neatData, 'NeatData.pkl')
 
+    def _createTrainedModelPipelineFile(self):
         with open('trainedmodelpipeline.py', 'w') as fileOut:
             fileOut.write(\\\"\\\"\\\"
 
@@ -187,38 +189,47 @@ import pickle
 class TrainedModelPipeline:
 
     def __init__(self):
-        self.modelPipeline = None
+        self.exportedPipeline = None
+        self.neatData = None
+        self.testX = None
         self.cleanTestX = None
+        self.results = None
+        self.resultsDf = None
 
     def execute(self):
-        with open('ModelPipeline.pkl', 'rb') as input:
-            self.modelPipeline = pickle.load(input)
-        testX = self._getDataset()
-        self.cleanTestX = self._cleanDataset(testX)
-        results = self._predict()
-        resultsDf = self._concatenatePredictionsToDataframe(results)
-        self._saveResultsAsCSV(resultsDf)
-        print("Done.  Created results.csv")
+        self._loadObjects()
+        self._getDataset()
+        self._cleanDataset()
+        self._predict()
+        self._concatenatePredictionsToDataframe()
+        self._saveResultsAsCSV()
+        print("Done. Created results.csv")
+
+    def _loadObjects(self):
+        with open('exportedPipeline.pkl', 'rb') as input:
+            self.exportedPipeline = pickle.load(input)
+        with open('NeatData.pkl', 'rb') as input:
+            self.neatData = pickle.load(input)
 
     def _getDataset(self):
-        return pd.read_csv('test_iris.csv') # Edit: Your dataset
+        self.testX = pd.read_csv('test_iris.csv') # Edit: Your dataset
 
-    def _cleanDataset(self, testX):
-        return neatData.cleanTestDataset(testX)
+    def _cleanDataset(self):
+        self.cleanTestX = self.neatData.cleanTestDataset(self.testX)
 
     def _predict(self):
-        results = exported_pipeline.predict(self.cleanTestX)
-        return neatData.convertYToStringsOrNumbersForPresentation(results)
+        self.results = self.exportedPipeline.predict(self.cleanTestX)
+        self.results = neatData.convertYToStringsOrNumbersForPresentation(self.results)
 
-    def _concatenatePredictionsToDataframe(self, results):
-        resultsDf = pd.DataFrame(results)
-        return pd.concat([testX, resultsDf], axis=1)
+    def _concatenatePredictionsToDataframe(self):
+        self.resultsDf = pd.DataFrame(self.results)
+        self.resultsDf = pd.concat([testX, resultsDf], axis=1)
 
-    def _saveResultsAsCSV(self, resultsDf):
-        resultsDf.to_csv('./results.csv')
+    def _saveResultsAsCSV(self):
+        self.resultsDf.to_csv('./results.csv')
 
 trainedModelPipeline = new TrainedModelPipeline()
-trainedModelPipeline.execute()        
+trainedModelPipeline.execute()
 \\\"\\\"\\\")
 
 modelPipeline = new ModelPipeline()
