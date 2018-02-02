@@ -20,10 +20,13 @@ import pandas as pd
 import numpy as np
 
 # Get data here
-df = pd.read_csv("iris.csv") # Edit: Your dataset
+df = pd.read_csv("train.csv") # Edit: Your dataset
+# classDF = pd.read_csv("train_labels.csv", header=None)
+# df = pd.concat([df, classDF], axis=1)
+print(df.shape)
 print(df.describe(include = [np.number]))
-print(df.describe(include = ['O']))
 print(df.dtypes)
+print(df.describe(include = ['O']))
 df.head()
 
 """
@@ -40,10 +43,14 @@ trainX, testX, trainY, testY = train_test_split(df.drop([className], axis=1),
 indexColumns = [] # Edit: Optionally add column names
 iWillManuallyCleanColumns = [] # Edit: Optionally add column names
 
-print("trainX\\n")
-print(trainX.head())
-print("\\ntrainY\\n")
+print("trainX.shape = ", trainX.shape)
+print("testX.shape = ", testX.shape)
+print("trainY.shape = ", trainY.shape)
+print("testY.shape = ", testY.shape)
+print("\ntrainY\n")
 print(trainY.head())
+print("trainX\n")
+print(trainX.head())
 """
 
         header3 = """\
