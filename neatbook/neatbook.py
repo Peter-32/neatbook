@@ -138,14 +138,17 @@ class ModelPipeline:
         self._createTrainedModelPipelineFile()
 
     def _getDatasetFromOneFile(self):
-        df = pd.read_csv('iris.csv') # Edit: Your dataset
+        df = pd.read_csv('train.csv') # Edit: Your dataset
+        # df = pd.read_csv('train.csv', header=None)
+        # classDF = pd.read_csv("train_labels.csv", header=None, names=["class"])
+        # df = pd.concat([df, classDF], axis=1)
         trainX, testX, trainY, testY = train_test_split(df.drop([self.className], axis=1),
                                                          df[self.className], train_size=0.75, test_size=0.25)
         return trainX, testX, trainY, testY
 
     def _getDatasetFromTwoFiles(self):
-        trainingDf = pd.read_csv('train_iris.csv') # Edit: Your training dataset
-        testDf = pd.read_csv('test_iris.csv') # Edit: Your test dataset
+        trainingDf = pd.read_csv('train.csv') # Edit: Your training dataset
+        testDf = pd.read_csv('test.csv') # Edit: Your test dataset
         trainX = trainingDf.drop([self.className], axis=1)
         trainY = trainingDf[self.className]
         testX = testDf.drop([self.className], axis=1)
@@ -220,7 +223,8 @@ class TrainedModelPipeline:
             self.neatData = pickle.load(input)
 
     def _getDataset(self):
-        self.testX = pd.read_csv('test_iris.csv') # Edit: Your dataset
+        self.testX = pd.read_csv('test.csv') # Edit: Your dataset
+        # self.testX = pd.read_csv('test.csv', header=None)
 
     def _cleanDataset(self):
         self.cleanTestX = self.neatData.cleanTestDataset(self.testX)
